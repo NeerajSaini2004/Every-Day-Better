@@ -18,18 +18,39 @@ required.forEach((k) => {
 const app = express();
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
-const clientOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
-  : ['http://localhost:3000'];
+const rawClientUrl = process.env.CLIENT_URL || '';
+const clientOrigins = rawClientUrl
+  ? rawClientUrl.split(',').map((url) => url.trim().replace(/\/+$/, '')).filter(Boolean)
+  : [];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || clientOrigins.includes(origin) || clientOrigins.includes('*')) {
+    // Allow non-browser requests (e.g. mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+
+    // If no CLIENT_URL is specified or set to '*', allow the request
+    if (clientOrigins.length === 0 || clientOrigins.includes('*')) {
       return callback(null, true);
     }
-    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+
+    // Check exact origin or subdomains for Vercel/Netlify/Render
+    const isAllowed = clientOrigins.some((allowed) => {
+      if (allowed === origin) return true;
+      if ((allowed.includes('.vercel.app') || allowed === 'vercel') && origin.endsWith('.vercel.app')) return true;
+      if ((allowed.includes('.netlify.app') || allowed === 'netlify') && origin.endsWith('.netlify.app')) return true;
+      if ((allowed.includes('.onrender.com') || allowed === 'render') && origin.endsWith('.onrender.com')) return true;
+      return false;
+    });
+
+    if (isAllowed || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      return callback(null, true);
+    }
+
+    return callback(null, false);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({ limit: '10kb' }));
 
@@ -78,6 +99,22 @@ app.get('/api', (req, res) => res.json({
 }));
 
 app.get('/', (req, res) => res.json({ message: 'Every Day Better API Running ✅', version: '2.0' }));
+
+// One-time seed trigger — protected by SEED_SECRET env var
+app.post('/api/run-seed', async (req, res) => {
+  if (req.body.secret !== (process.env.SEED_SECRET || 'seed_everydaybetter_2024')) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  try {
+    const { execFile } = require('child_process');
+    execFile('node', ['seed/seedData.js'], { cwd: __dirname, env: process.env }, (err, stdout, stderr) => {
+      if (err) return res.status(500).json({ message: 'Seed failed', error: err.message, stderr });
+      res.json({ message: 'Seed completed', output: stdout });
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // Global error handler — never leak stack traces to client
 app.use((err, req, res, next) => {

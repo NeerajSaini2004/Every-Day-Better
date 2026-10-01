@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const getBaseUrl = () => {
+  const envUrl = process.env.REACT_APP_API_URL;
+  if (!envUrl) return 'https://every-day-better-backend.onrender.com/api';
+  const clean = envUrl.trim().replace(/\/+$/, '');
+  return clean.endsWith('/api') ? clean : `${clean}/api`;
+};
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://every-day-better-backend.onrender.com/api',
+  baseURL: getBaseUrl(),
 });
 
 api.interceptors.request.use((config) => {
