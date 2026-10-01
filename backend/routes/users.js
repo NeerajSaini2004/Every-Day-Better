@@ -20,6 +20,22 @@ router.put('/profile', protect, async (req, res) => {
   }
 });
 
+// Change password
+router.put('/change-password', protect, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+    const bcrypt = require('bcryptjs');
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(400).json({ message: 'Current password is incorrect' });
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: 'Password changed successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Leaderboard
 router.get('/leaderboard', protect, async (req, res) => {
   try {

@@ -57,10 +57,8 @@ export default function NextActionCard({
     if (ctaHref) {
       return (
         <a
-          href={locked ? undefined : ctaHref}
-          onClick={(e) => {
-            if (locked) e.preventDefault();
-          }}
+          href={ctaHref}
+          onClick={(e) => { if (locked) e.preventDefault(); }}
           className={className}
         >
           {ctaLabel}

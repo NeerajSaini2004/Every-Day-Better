@@ -15,8 +15,14 @@ A full-stack MERN application — gamified English learning tracker inspired by 
 ```bash
 cd backend
 npm install
-# Edit .env — set your MONGO_URI
+cp .env.example .env
+# Update .env with your local MongoDB URL and secrets
 npm run dev        # runs on http://localhost:5000
+```
+
+### API health check
+```bash
+curl http://localhost:5000/api/health
 ```
 
 ### 2. Seed Database

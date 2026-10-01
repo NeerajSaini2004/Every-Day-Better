@@ -6,6 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import TaskCard from '../components/ui/TaskCard';
 import ProgressBar from '../components/ui/ProgressBar';
 import Spinner from '../components/ui/Spinner';
+import WritingFeedback from '../components/ui/WritingFeedback';
+import DailyNews from '../components/ui/DailyNews';
+import DailyQuote from '../components/ui/DailyQuote';
+import DayQuiz from '../components/ui/DayQuiz';
 import { ArrowLeft, ArrowRight, CheckCircle, Star, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -145,6 +149,14 @@ export default function DayChallenge() {
         )}
       </AnimatePresence>
 
+      {/* Bonus Section — Live APIs */}
+      <div className="space-y-4">
+        <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">⚡ Bonus Practice</p>
+        <DailyQuote />
+        <DailyNews />
+        <WritingFeedback />
+      </div>
+
       {/* Tasks */}
       <div className="space-y-3">
         {day.tasks?.map((task) => {
@@ -155,6 +167,14 @@ export default function DayChallenge() {
         })}
       </div>
 
+      {/* Day Quiz — shown when day is completed */}
+      {progress?.isCompleted && (
+        <div className="space-y-3">
+          <p className="text-xs text-gray-500 font-semibold uppercase tracking-widest">🧠 Test Your Knowledge</p>
+          <DayQuiz dayNumber={parseInt(dayNumber)} />
+        </div>
+      )}
+
       {/* Navigation */}
       <div className="flex gap-3">
         {parseInt(dayNumber) > 1 && (
@@ -163,8 +183,16 @@ export default function DayChallenge() {
           </button>
         )}
         {parseInt(dayNumber) < 60 && (
-          <button onClick={() => navigate(`/day/${parseInt(dayNumber) + 1}`)} className="btn-primary flex items-center gap-2 flex-1 justify-center">
+          <button
+            onClick={() => progress?.isCompleted && navigate(`/day/${parseInt(dayNumber) + 1}`)}
+            disabled={!progress?.isCompleted}
+            title={!progress?.isCompleted ? 'Complete this day first to unlock the next' : ''}
+            className={`flex items-center gap-2 flex-1 justify-center btn-primary transition-all ${
+              !progress?.isCompleted ? 'opacity-40 cursor-not-allowed' : ''
+            }`}
+          >
             Day {parseInt(dayNumber) + 1} <ArrowRight size={16} />
+            {!progress?.isCompleted && <span className="text-xs ml-1">🔒</span>}
           </button>
         )}
       </div>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 
@@ -63,12 +63,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = useCallback((silent = false) => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
-    toast.success('Logged out successfully');
-  };
+    if (!silent) toast.success('Logged out successfully');
+  }, []);
+
+  useEffect(() => {
+    const handleTokenExpiry = () => {
+      logout(true);
+      toast.error('Session expired. Please login again.');
+    };
+    window.addEventListener('auth:logout', handleTokenExpiry);
+    return () => window.removeEventListener('auth:logout', handleTokenExpiry);
+  }, [logout]);
 
   const updateUser = useCallback((updates) => {
     setUser((prev) => {

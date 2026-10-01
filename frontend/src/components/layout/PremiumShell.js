@@ -1,13 +1,11 @@
-import React, { useMemo } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import React from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
 
 const AUTH_PATHS = ['/login', '/register', '/reset-password', '/forgot-password'];
 
 export default function PremiumShell({ children }) {
-  const { user } = useAuth();
   const location = useLocation();
 
   const isAuthPage = AUTH_PATHS.some(p => location.pathname === p || location.pathname.startsWith(p + '/'));

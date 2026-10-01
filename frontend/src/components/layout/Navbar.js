@@ -48,6 +48,11 @@ export default function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-2">
+              {user.role === 'admin' && (
+                <Link to="/admin" className="hidden md:flex items-center gap-1 bg-red-500/20 text-red-400 hover:bg-red-500/30 px-3 py-1.5 rounded-full text-sm font-bold transition">
+                  ⚙️ Admin
+                </Link>
+              )}
               <Link to="/profile" className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-bold text-sm">
                 {user.name?.[0]?.toUpperCase()}
               </Link>
@@ -69,6 +74,11 @@ export default function Navbar() {
               {l.label}
             </Link>
           ))}
+          {user?.role === 'admin' && (
+            <Link to="/admin" onClick={() => setOpen(false)} className="block px-4 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:bg-white/10">
+              ⚙️ Admin Panel
+            </Link>
+          )}
           {user && (
             <button onClick={() => { logout(); navigate('/'); setOpen(false); }} className="block w-full text-left px-4 py-2.5 rounded-lg text-sm text-red-400 hover:bg-white/10">
               Logout

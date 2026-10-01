@@ -26,6 +26,15 @@ router.get('/daily-quote', protect, async (req, res) => {
   }
 });
 
+router.get('/quotes', protect, async (req, res) => {
+  try {
+    const quotes = await Quote.find().sort({ createdAt: -1 });
+    res.json(quotes);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.get('/', protect, async (req, res) => {
   try {
     const { day, difficulty, page = 1, limit = 200 } = req.query;

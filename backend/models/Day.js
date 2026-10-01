@@ -8,6 +8,8 @@ const taskSchema = new mongoose.Schema({
   duration: { type: Number, default: 5 }, // minutes
   hasTimer: { type: Boolean, default: false },
   hasRecording: { type: Boolean, default: false },
+  url: { type: String, trim: true },
+  urlLabel: { type: String, trim: true },
 });
 
 const daySchema = new mongoose.Schema({

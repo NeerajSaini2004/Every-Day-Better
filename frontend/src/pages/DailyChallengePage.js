@@ -31,8 +31,10 @@ export default function DailyChallengePage() {
         selectedIndex: idx,
       });
       setResult(data);
-      if (data.xpEarned > 0) {
-        updateUser({ xp: (prev) => prev + data.xpEarned });
+      if (data.xpEarned > 0 && data.user) {
+        updateUser({ xp: data.user?.xp });
+        toast.success(`+${data.xpEarned} XP earned! 🎉`, { icon: '⚡' });
+      } else if (data.xpEarned > 0) {
         toast.success(`+${data.xpEarned} XP earned! 🎉`, { icon: '⚡' });
       }
     } catch { toast.error('Failed to submit'); }
@@ -56,24 +58,26 @@ export default function DailyChallengePage() {
       </div>
 
       {/* Reward banner */}
-      <div className="glass-card bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border-yellow-500/20 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center text-2xl">⚡</div>
-        <div>
-          <p className="font-bold text-white">+15 XP Reward</p>
-          <p className="text-xs text-gray-400">Answer correctly to earn XP. New question every day!</p>
-        </div>
-        <div className="ml-auto flex items-center gap-1 text-xs font-bold text-yellow-400 bg-yellow-500/20 px-3 py-1.5 rounded-full capitalize">
-          {challenge.category}
+      <div className="glass-card bg-gradient-to-r from-yellow-900/20 to-orange-900/20 border-yellow-500/20">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center text-xl shrink-0">⚡</div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-bold text-white">+15 XP Reward</p>
+              <span className="text-xs font-bold text-yellow-400 bg-yellow-500/20 px-2 py-0.5 rounded-full capitalize">{challenge.category}</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${
+                challenge.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400' :
+                challenge.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>{challenge.difficulty}</span>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5">Answer correctly to earn XP. New question every day!</p>
+          </div>
         </div>
       </div>
 
       {/* Question */}
       <div className="glass-card">
-        <div className="flex items-center gap-2 mb-4">
-          <span className={`badge text-xs ${challenge.difficulty === 'beginner' ? 'bg-green-500/20 text-green-400' : challenge.difficulty === 'intermediate' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-            {challenge.difficulty}
-          </span>
-        </div>
         <h2 className="text-lg sm:text-xl font-bold text-white mb-6 leading-relaxed">{challenge.question}</h2>
 
         <div className="space-y-3">

@@ -18,7 +18,19 @@ required.forEach((k) => {
 const app = express();
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000', credentials: true }));
+const clientOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
+  : ['http://localhost:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || clientOrigins.includes(origin) || clientOrigins.includes('*')) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
+  credentials: true,
+}));
 app.use(express.json({ limit: '10kb' }));
 
 // Strip $ and . from req.body/params to block NoSQL injection
@@ -32,6 +44,7 @@ app.use(
   })
 );
 
+app.use('/api/health', require('./routes/health'));
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/days', require('./routes/days'));
@@ -40,6 +53,28 @@ app.use('/api/vocabulary', require('./routes/vocabulary'));
 app.use('/api/grammar', require('./routes/grammar'));
 app.use('/api/challenge', require('./routes/challenge'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/gemini', require('./routes/gemini'));
+app.use('/api/dictionary', require('./routes/dictionary'));
+app.use('/api/news', require('./routes/news'));
+
+app.get('/api', (req, res) => res.json({
+  message: 'Every Day Better API',
+  version: '2.0',
+  endpoints: {
+    health: '/api/health',
+    auth: '/api/auth',
+    users: '/api/users',
+    days: '/api/days',
+    progress: '/api/progress',
+    vocabulary: '/api/vocabulary',
+    grammar: '/api/grammar',
+    challenge: '/api/challenge',
+    admin: '/api/admin',
+    gemini: '/api/gemini',
+    dictionary: '/api/dictionary/:word',
+    news: '/api/news',
+  },
+}));
 
 app.get('/', (req, res) => res.json({ message: 'Every Day Better API Running ✅', version: '2.0' }));
 

@@ -2,10 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
-
 import PremiumShell from './components/layout/PremiumShell';
-
 import ErrorBoundary from './components/ErrorBoundary';
 
 import Home from './pages/Home_new';
@@ -23,11 +20,12 @@ import Speaking from './pages/Speaking';
 import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import NotFound from './pages/NotFound';
 
 const PrivateRoute = ({ children }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" />;
-  if (!user.onboardingDone) return <Navigate to="/onboarding" />;
+  if (user.onboardingDone === false) return <Navigate to="/onboarding" />;
   return children;
 };
 
@@ -40,7 +38,6 @@ function AppRoutes() {
   return (
     <PremiumShell>
       <Routes>
-
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -57,7 +54,7 @@ function AppRoutes() {
         <Route path="/leaderboard" element={<PrivateRoute><Leaderboard /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </PremiumShell>
   );
@@ -66,12 +63,11 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <ErrorBoundary>
-            <AppRoutes />
-            <Toaster
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <AuthProvider>
+        <ErrorBoundary>
+          <AppRoutes />
+          <Toaster
             position="top-center"
             toastOptions={{
               style: { background: '#1F2937', color: '#fff', border: '1px solid #374151', borderRadius: '12px' },
@@ -79,9 +75,8 @@ export default function App() {
               error: { iconTheme: { primary: '#EF4444', secondary: '#fff' } },
             }}
           />
-          </ErrorBoundary>
-        </AuthProvider>
-      </ThemeProvider>
+        </ErrorBoundary>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

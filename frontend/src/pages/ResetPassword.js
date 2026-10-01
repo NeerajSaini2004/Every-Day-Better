@@ -18,10 +18,9 @@ export default function ResetPassword() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.post('/auth/forgot-password', { email });
+      await api.post('/auth/forgot-password', { email });
       setSent(true);
       toast.success('Reset link sent!');
-      if (data.resetUrl) console.info('Dev reset URL:', data.resetUrl);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed');
     } finally { setLoading(false); }

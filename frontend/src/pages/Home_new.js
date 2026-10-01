@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ArrowRight, Flame, Zap, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ArrowRight, Flame, Zap, Star, ChevronDown, ChevronUp, BookOpen, Mic, PenTool, Headphones, MessageSquare, Brain, Award, Quote } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const features = [
   { icon: '📚', title: 'Daily Vocabulary', desc: 'Learn 10 new words every day with Hindi meanings and example sentences.' },
@@ -26,19 +27,66 @@ const faqs = [
   { q: 'Will I become fluent in 60 days?', a: 'You will build a strong foundation and gain confidence to speak English in daily situations.' },
 ];
 
+const WEEK_THEMES = [
+  { week: 1, label: 'Foundations', color: 'from-blue-600 to-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-400', days: '1–10' },
+  { week: 2, label: 'Daily Life', color: 'from-green-600 to-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30', text: 'text-green-400', days: '11–20' },
+  { week: 3, label: 'Work & Study', color: 'from-purple-600 to-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-400', days: '21–30' },
+  { week: 4, label: 'Fluency', color: 'from-orange-600 to-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-400', days: '31–40' },
+  { week: 5, label: 'Advanced', color: 'from-pink-600 to-pink-400', bg: 'bg-pink-500/10', border: 'border-pink-500/30', text: 'text-pink-400', days: '41–50' },
+  { week: 6, label: 'Mastery', color: 'from-yellow-600 to-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', days: '51–60' },
+];
+
+const TASK_ICONS = [
+  { icon: <BookOpen size={14} />, label: 'Vocabulary' },
+  { icon: <PenTool size={14} />, label: 'Grammar' },
+  { icon: <Mic size={14} />, label: 'Speaking' },
+  { icon: <Headphones size={14} />, label: 'Listening' },
+  { icon: <MessageSquare size={14} />, label: 'Conversation' },
+  { icon: <Brain size={14} />, label: 'Quiz' },
+];
+
 export default function Home() {
   const { user: storedUser } = useAuth();
-  
+  const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(null);
   const [count, setCount] = useState(0);
+  const [activeWeek, setActiveWeek] = useState(0);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [dailyQuote, setDailyQuote] = useState(null);
 
   useEffect(() => {
     const interval = setInterval(() => setCount((c) => (c < 60 ? c + 1 : c)), 30);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (storedUser) {
+      api.get('/users/leaderboard').then(r => setLeaderboard(r.data.slice(0, 3))).catch(() => {});
+      api.get('/vocabulary/daily-quote').then(r => setDailyQuote(r.data)).catch(() => {});
+    }
+  }, [storedUser]);
+
   return (
     <div className="min-h-screen">
+      {/* Home Navbar */}
+      <nav className="sticky top-0 z-50 glass border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2 font-black text-xl">
+            <span className="text-2xl">📚</span>
+            <span className="bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">Every Day Better</span>
+          </Link>
+          <div className="flex items-center gap-3">
+            {storedUser ? (
+              <Link to="/dashboard" className="btn-primary text-sm py-2 px-4">Dashboard →</Link>
+            ) : (
+              <>
+                <Link to="/login" className="text-sm text-gray-400 hover:text-white transition font-medium">Login</Link>
+                <Link to="/register" className="btn-primary text-sm py-2 px-4">Start Free</Link>
+              </>
+            )}
+          </div>
+        </div>
+      </nav>
       {/* Hero Section */}
       <section className="relative overflow-hidden px-4 sm:px-6 pt-12 sm:pt-16 pb-16 sm:pb-24 text-center">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20 pointer-events-none" />
@@ -46,8 +94,13 @@ export default function Home() {
         <div className="absolute bottom-10 right-1/4 w-48 sm:w-72 h-48 sm:h-72 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto animate-slide-up">
-          <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium mb-4 sm:mb-6">
-            <Flame size={14} className="text-orange-400" /> 60-Day English Challenge
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4 sm:mb-6">
+            <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium">
+              <Flame size={14} className="text-orange-400" /> 60-Day English Challenge
+            </div>
+            <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-medium">
+              🇮🇳 Hindi + English Support
+            </div>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-black text-white leading-tight mb-4 sm:mb-6">
@@ -146,6 +199,128 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 60-Day Challenge Visual */}
+      <section className="px-4 sm:px-6 py-12 sm:py-16 max-w-5xl mx-auto">
+        <div className="text-center mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white mb-2">Your 60-Day Roadmap 🗺️</h2>
+          <p className="text-gray-400 text-sm sm:text-base">6 weeks, 6 themes — from basics to mastery</p>
+        </div>
+
+        {/* Week tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+          {WEEK_THEMES.map((w, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveWeek(i)}
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-200 ${
+                activeWeek === i
+                  ? `bg-gradient-to-r ${w.color} text-white border-transparent shadow-lg`
+                  : `${w.bg} ${w.border} ${w.text} hover:opacity-80`
+              }`}
+            >
+              Week {w.week} · {w.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Active week detail */}
+        {(() => {
+          const w = WEEK_THEMES[activeWeek];
+          const startDay = activeWeek * 10 + 1;
+          return (
+            <div className={`glass rounded-2xl border ${w.border} p-5 sm:p-6 mb-6`}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className={`text-xs font-bold ${w.text} mb-1`}>WEEK {w.week} · DAYS {w.days}</p>
+                  <h3 className="text-xl font-black text-white">{w.label}</h3>
+                </div>
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${w.color} flex items-center justify-center text-2xl shadow-lg`}>
+                  {['🔤', '🏠', '💼', '🗣️', '📈', '🏆'][activeWeek]}
+                </div>
+              </div>
+
+              {/* Day grid */}
+              <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 mb-5">
+                {Array.from({ length: 10 }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`aspect-square rounded-lg flex items-center justify-center text-xs font-bold border transition-all hover:scale-110 cursor-default ${
+                      storedUser && (storedUser.completedDays || []).includes(startDay + i)
+                        ? `bg-gradient-to-br ${w.color} text-white border-transparent shadow-md`
+                        : `${w.bg} ${w.border} ${w.text}`
+                    }`}
+                  >
+                    {startDay + i}
+                  </div>
+                ))}
+              </div>
+
+              {/* Task types */}
+              <div className="flex flex-wrap gap-2">
+                {TASK_ICONS.map((t, i) => (
+                  <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${w.bg} ${w.text} border ${w.border}`}>
+                    {t.icon} {t.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* All 60 days mini grid */}
+        <div className="glass rounded-2xl border border-white/10 p-4 sm:p-5">
+          <p className="text-xs text-gray-500 font-semibold mb-3 uppercase tracking-wider">All 60 Days at a Glance</p>
+          <div className="grid grid-cols-10 sm:grid-cols-15 gap-1.5">
+            {Array.from({ length: 60 }, (_, i) => {
+              const weekIdx = Math.floor(i / 10);
+              const w = WEEK_THEMES[weekIdx];
+              const done = storedUser && (storedUser.completedDays || []).includes(i + 1);
+              return (
+                <div
+                  key={i}
+                  title={`Day ${i + 1}`}
+                  className={`aspect-square rounded-md flex items-center justify-center text-xs font-bold transition-all hover:scale-110 ${
+                    done
+                      ? `bg-gradient-to-br ${w.color} text-white shadow-sm`
+                      : `${w.bg} ${w.text} opacity-60`
+                  }`}
+                >
+                  {i + 1}
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex flex-wrap gap-3 mt-4">
+            {WEEK_THEMES.map((w, i) => (
+              <span key={i} className={`inline-flex items-center gap-1.5 text-xs ${w.text}`}>
+                <span className={`w-2.5 h-2.5 rounded-sm bg-gradient-to-br ${w.color}`} />
+                W{w.week} {w.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="text-center mt-6">
+          <button
+            onClick={() => navigate(storedUser ? '/dashboard' : '/register')}
+            className="btn-primary inline-flex items-center gap-2 text-sm font-semibold py-3 px-8"
+          >
+            {storedUser ? 'Continue Your Journey' : 'Start Day 1 Free'} <ArrowRight size={16} />
+          </button>
+        </div>
+      </section>
+
+      {/* Daily Quote */}
+      {dailyQuote && (
+        <section className="px-4 sm:px-6 py-8 max-w-3xl mx-auto">
+          <div className="glass-card border-yellow-500/20 bg-gradient-to-r from-yellow-900/10 to-orange-900/10 text-center">
+            <Quote size={24} className="text-yellow-400 mx-auto mb-3" />
+            <p className="text-white text-base sm:text-lg font-semibold italic mb-2">"{dailyQuote.text}"</p>
+            <p className="text-yellow-400 text-sm">— {dailyQuote.author}</p>
+          </div>
+        </section>
+      )}
+
       {/* How It Works */}
       <section className="px-4 sm:px-6 py-12 sm:py-16 max-w-4xl mx-auto">
         <div className="text-center mb-8 sm:mb-12">
@@ -165,6 +340,65 @@ export default function Home() {
               <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">{s.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Leaderboard Preview */}
+      {leaderboard.length > 0 && (
+        <section className="px-4 sm:px-6 py-12 sm:py-16 max-w-3xl mx-auto">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">🏆 Top Learners</h2>
+            <p className="text-gray-400 text-sm">Can you make it to the top?</p>
+          </div>
+          <div className="space-y-3">
+            {leaderboard.map((u, i) => (
+              <div key={u._id} className={`glass-card flex items-center gap-4 border ${
+                i === 0 ? 'border-yellow-500/40 bg-yellow-500/5' :
+                i === 1 ? 'border-gray-400/30 bg-gray-500/5' :
+                'border-orange-500/30 bg-orange-500/5'
+              }`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl font-black ${
+                  i === 0 ? 'bg-yellow-500/20 text-yellow-400' :
+                  i === 1 ? 'bg-gray-400/20 text-gray-300' :
+                  'bg-orange-500/20 text-orange-400'
+                }`}>{['🥇','🥈','🥉'][i]}</div>
+                <div className="flex-1">
+                  <p className="font-bold text-white">{u.name}</p>
+                  <p className="text-xs text-gray-500">Level {u.level} · {u.streak}🔥 streak</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-black text-white">{u.xp} XP</p>
+                  <p className="text-xs text-gray-500">{(u.completedDays||[]).length} days done</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-4">
+            <Link to="/leaderboard" className="text-sm text-blue-400 hover:text-blue-300 transition">View Full Leaderboard →</Link>
+          </div>
+        </section>
+      )}
+
+      {/* Certificate Preview */}
+      <section className="px-4 sm:px-6 py-12 sm:py-16 max-w-4xl mx-auto">
+        <div className="glass-card bg-gradient-to-br from-yellow-900/20 to-orange-900/20 border-yellow-500/30 text-center py-10">
+          <Award size={48} className="text-yellow-400 mx-auto mb-4" />
+          <h2 className="text-2xl sm:text-3xl font-black text-white mb-2">Earn Your Certificate 🎓</h2>
+          <p className="text-gray-400 text-sm sm:text-base mb-6 max-w-md mx-auto">Complete all 60 days and get a personalized certificate of achievement. Share it on LinkedIn and impress recruiters!</p>
+          <div className="max-w-sm mx-auto border-2 border-yellow-500/40 rounded-2xl p-6 bg-gradient-to-br from-yellow-900/30 to-orange-900/30 mb-6">
+            <div className="text-4xl mb-2">🏆</div>
+            <p className="text-xs text-yellow-400 font-bold uppercase tracking-widest mb-1">Certificate of Achievement</p>
+            <p className="text-white font-black text-lg mb-1">Every Day Better</p>
+            <p className="text-gray-400 text-xs mb-3">This certifies that</p>
+            <p className="text-white font-bold text-base border-b border-yellow-500/30 pb-2 mb-2">{storedUser?.name || 'Your Name'}</p>
+            <p className="text-gray-400 text-xs">has successfully completed the 60-Day English Challenge</p>
+            <div className="flex justify-center gap-1 mt-3">
+              {[...Array(5)].map((_, i) => <Star key={i} size={14} className="text-yellow-400 fill-yellow-400" />)}
+            </div>
+          </div>
+          <Link to={storedUser ? '/dashboard' : '/register'} className="btn-primary inline-flex items-center gap-2 font-semibold">
+            {storedUser ? 'Continue to Earn It' : 'Start & Earn Certificate'} <ArrowRight size={16} />
+          </Link>
         </div>
       </section>
 

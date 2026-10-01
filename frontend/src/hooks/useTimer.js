@@ -4,6 +4,14 @@ export const useTimer = (initialSeconds = 120) => {
   const [seconds, setSeconds] = useState(initialSeconds);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef(null);
+  const initialRef = useRef(initialSeconds);
+
+  // When initialSeconds prop changes, update ref and reset
+  useEffect(() => {
+    initialRef.current = initialSeconds;
+    setRunning(false);
+    setSeconds(initialSeconds);
+  }, [initialSeconds]);
 
   useEffect(() => {
     if (running) {
@@ -25,8 +33,8 @@ export const useTimer = (initialSeconds = 120) => {
   const pause = useCallback(() => setRunning(false), []);
   const reset = useCallback(() => {
     setRunning(false);
-    setSeconds(initialSeconds);
-  }, [initialSeconds]);
+    setSeconds(initialRef.current);
+  }, []);
 
   const format = useCallback(() => {
     const m = Math.floor(seconds / 60);

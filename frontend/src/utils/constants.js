@@ -24,6 +24,9 @@ export const TASK_COLORS = {
   confidence: 'orange',
 };
 
+export const isUnlocked = (dayNumber, user) =>
+  user?.role === 'admin' || dayNumber === 1 || (user?.completedDays || []).includes(dayNumber - 1) || dayNumber <= ((user?.completedDays || []).length + 1);
+
 export const LEVEL_NAMES = ['Beginner', 'Explorer', 'Learner', 'Speaker', 'Communicator', 'Fluent', 'Advanced', 'Expert', 'Master', 'Champion'];
 
 export const getLevelName = (level) => LEVEL_NAMES[Math.min(level - 1, LEVEL_NAMES.length - 1)];

@@ -14,17 +14,7 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-
-      const path = window.location.pathname || '';
-      const authPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
-
-      // Avoid hard-redirect loops when already on an auth-related page
-      const isAuthPage = authPaths.some((p) => path === p || path.startsWith(`${p}/`));
-      if (!isAuthPage) {
-        window.location.href = '/login';
-      }
+      window.dispatchEvent(new Event('auth:logout'));
     }
     return Promise.reject(err);
   }
