@@ -54,6 +54,7 @@ app.use('/api/grammar', require('./routes/grammar'));
 app.use('/api/challenge', require('./routes/challenge'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/gemini', require('./routes/gemini'));
+app.use('/api/groq', require('./routes/groq'));
 app.use('/api/dictionary', require('./routes/dictionary'));
 app.use('/api/news', require('./routes/news'));
 
