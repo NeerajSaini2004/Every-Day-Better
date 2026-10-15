@@ -165,7 +165,9 @@ export default function Vocabulary() {
 
   // Fetch DB vocab + quote
   useEffect(() => {
-    api.get('/vocabulary/available-days').then((r) => setAvailableDays(r.data));
+    api.get('/vocabulary/available-days')
+      .then((r) => setAvailableDays(r.data || []))
+      .catch(() => setAvailableDays([]));
   }, []);
 
   useEffect(() => {

@@ -1,5 +1,7 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
+const { aiRateLimit, aiBurstLimit } = require('../middleware/aiRateLimit');
+const { aiChatRules } = require('../middleware/validate');
 
 const router = express.Router();
 const DEFAULT_MODEL = 'gemini-3.8-flash';
@@ -14,11 +16,8 @@ const buildContents = (messages = []) => messages
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-router.post('/chat', protect, async (req, res) => {
+router.post('/chat', protect, aiRateLimit, aiBurstLimit, aiChatRules, async (req, res) => {
   const { messages, model = DEFAULT_MODEL } = req.body;
-  if (!Array.isArray(messages) || !messages.length) {
-    return res.status(400).json({ message: 'messages required' });
-  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
 import BottomNav from './BottomNav';
 
-const AUTH_PATHS = ['/login', '/register', '/reset-password', '/forgot-password'];
+const AUTH_PATHS = ['/login', '/register', '/reset-password', '/forgot-password', '/terms', '/privacy'];
 
 export default function PremiumShell({ children }) {
   const location = useLocation();

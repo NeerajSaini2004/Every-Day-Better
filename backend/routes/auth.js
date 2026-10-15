@@ -3,8 +3,18 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+const { sendPasswordResetEmail } = require('../utils/email');
+const {
+  registerRules,
+  loginRules,
+  forgotPasswordRules,
+  resetPasswordRules,
+  onboardingRules,
+  googleAuthRules,
+} = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -35,11 +45,9 @@ const formatUser = (user) => ({
 });
 
 // Register
-router.post('/register', authLimiter, async (req, res) => {
+router.post('/register', authLimiter, registerRules, async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    if (!name?.trim() || !email?.trim() || !password) return res.status(400).json({ message: 'All fields required' });
-    if (password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
     if (await User.findOne({ email: email.toLowerCase().trim() })) return res.status(400).json({ message: 'Email already exists' });
     const hashed = await bcrypt.hash(password, 12);
     const user = await User.create({ name: name.trim(), email: email.toLowerCase().trim(), password: hashed });
@@ -50,10 +58,9 @@ router.post('/register', authLimiter, async (req, res) => {
 });
 
 // Login
-router.post('/login', authLimiter, async (req, res) => {
+router.post('/login', authLimiter, loginRules, async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email?.trim() || !password) return res.status(400).json({ message: 'Email and password required' });
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     // Use constant-time compare even if user not found to prevent timing attacks
     const match = user ? await bcrypt.compare(password, user.password) : await bcrypt.compare(password, '$2b$12$invalidhashtopreventtimingattack1234567890');
@@ -64,13 +71,49 @@ router.post('/login', authLimiter, async (req, res) => {
   }
 });
 
-// Google OAuth — must come from real Google SDK in production (add token verification)
-router.post('/google', async (req, res) => {
+// Google OAuth — verifies Google ID token server-side
+router.post('/google', authLimiter, googleAuthRules, async (req, res) => {
   try {
-    const { name, email, googleId, avatar } = req.body;
-    if (!email || !googleId) return res.status(400).json({ message: 'Invalid Google credentials' });
+    const { credential } = req.body;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      return res.status(503).json({ message: 'Google OAuth is not configured. Add GOOGLE_CLIENT_ID to backend/.env.' });
+    }
+
+    // Verify the ID token with Google's servers
+    const client = new OAuth2Client(clientId);
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: clientId,
+      });
+    } catch (verifyErr) {
+      return res.status(401).json({ message: 'Invalid or expired Google token' });
+    }
+
+    const payload = ticket.getPayload();
+    if (!payload?.email) {
+      return res.status(401).json({ message: 'Google token does not contain email' });
+    }
+
+    const { email, name, sub: googleId, picture: avatar } = payload;
+
     let user = await User.findOne({ email: email.toLowerCase() });
-    if (!user) user = await User.create({ name, email: email.toLowerCase(), googleId, avatar });
+    if (!user) {
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email: email.toLowerCase(),
+        googleId,
+        avatar: avatar || '',
+      });
+    } else if (!user.googleId) {
+      // Link existing email-password account with Google
+      user.googleId = googleId;
+      if (avatar && !user.avatar) user.avatar = avatar;
+      await user.save();
+    }
+
     res.json({ token: generateToken(user._id), user: formatUser(user) });
   } catch (err) {
     res.status(500).json({ message: 'Google auth failed' });
@@ -78,7 +121,7 @@ router.post('/google', async (req, res) => {
 });
 
 // Forgot Password
-router.post('/forgot-password', authLimiter, async (req, res) => {
+router.post('/forgot-password', authLimiter, forgotPasswordRules, async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
@@ -89,19 +132,31 @@ router.post('/forgot-password', authLimiter, async (req, res) => {
     user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 min
     await user.save();
 
-    // In production use nodemailer — for now return token in dev
-    const resetUrl = `http://localhost:3000/reset-password/${token}`;
-    if (process.env.NODE_ENV === 'development') {
-      return res.json({ message: 'Reset link generated (dev mode)', resetUrl, token });
+    // Build reset URL — use CLIENT_URL if set, otherwise fall back to localhost for dev
+    const clientUrl = (process.env.CLIENT_URL || 'http://localhost:3000').split(',')[0].trim().replace(/\/+$/, '');
+    const resetUrl = `${clientUrl}/reset-password/${token}`;
+
+    // Attempt to send email; fall back to dev-mode response if SMTP not configured
+    const emailSent = await sendPasswordResetEmail(email, resetUrl);
+
+    if (emailSent) {
+      return res.json({ message: 'Password reset link sent to your email' });
     }
-    res.json({ message: 'Password reset link sent to your email' });
+
+    // Dev mode fallback — only expose token when email service is not available
+    if (process.env.NODE_ENV !== 'production') {
+      return res.json({ message: 'Reset link generated (dev mode — email not configured)', resetUrl, token });
+    }
+
+    // Production without email = bad config, but don't leak the token
+    return res.status(503).json({ message: 'Email service not configured. Contact support.' });
   } catch (err) {
     res.status(500).json({ message: 'Request failed' });
   }
 });
 
 // Reset Password
-router.post('/reset-password/:token', async (req, res) => {
+router.post('/reset-password/:token', resetPasswordRules, async (req, res) => {
   try {
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
     const user = await User.findOne({
@@ -110,10 +165,7 @@ router.post('/reset-password/:token', async (req, res) => {
     });
     if (!user) return res.status(400).json({ message: 'Invalid or expired reset token' });
 
-    const { password } = req.body;
-    if (!password || password.length < 8) return res.status(400).json({ message: 'Password must be at least 8 characters' });
-
-    user.password = await bcrypt.hash(password, 12);
+    user.password = await bcrypt.hash(req.body.password, 12);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
     await user.save();
@@ -125,7 +177,7 @@ router.post('/reset-password/:token', async (req, res) => {
 });
 
 // Complete Onboarding
-router.post('/onboarding', protect, async (req, res) => {
+router.post('/onboarding', protect, onboardingRules, async (req, res) => {
   try {
     const { englishLevel, goal, dailyTime } = req.body;
     const user = await User.findByIdAndUpdate(

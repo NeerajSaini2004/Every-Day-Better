@@ -3,6 +3,11 @@ const DailyChallenge = require('../models/DailyChallenge');
 const User = require('../models/User');
 const Vocabulary = require('../models/Vocabulary');
 const { protect } = require('../middleware/auth');
+const {
+  challengeSubmitRules,
+  srsAddRules,
+  srsReviewRules,
+} = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -23,7 +28,7 @@ router.get('/today', protect, async (req, res) => {
 });
 
 // Submit answer
-router.post('/submit', protect, async (req, res) => {
+router.post('/submit', protect, challengeSubmitRules, async (req, res) => {
   try {
     const { challengeId, selectedIndex } = req.body;
     const challenge = await DailyChallenge.findById(challengeId);
@@ -74,7 +79,7 @@ router.get('/srs/due', protect, async (req, res) => {
 });
 
 // SRS — add word to review queue
-router.post('/srs/add', protect, async (req, res) => {
+router.post('/srs/add', protect, srsAddRules, async (req, res) => {
   try {
     const { wordId } = req.body;
     const user = await User.findById(req.user._id);
@@ -90,7 +95,7 @@ router.post('/srs/add', protect, async (req, res) => {
 });
 
 // SRS — submit review result (SM-2 algorithm)
-router.post('/srs/review', protect, async (req, res) => {
+router.post('/srs/review', protect, srsReviewRules, async (req, res) => {
   try {
     const { srsId, quality } = req.body; // quality: 0=fail, 1=hard, 2=easy
     const user = await User.findById(req.user._id);

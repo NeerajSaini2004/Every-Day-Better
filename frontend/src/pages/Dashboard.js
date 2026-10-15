@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import DayCard from '../components/ui/DayCard';
@@ -18,34 +18,37 @@ export default function Dashboard() {
   const [days, setDays] = useState([]);
   const [allProgress, setAllProgress] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [collapsedWeeks, setCollapsedWeeks] = useState({});
 
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const [daysRes, progressRes] = await Promise.all([api.get('/days'), api.get('/progress')]);
-        if (cancelled) return;
-        setDays(daysRes.data);
-        setAllProgress(progressRes.data);
-        const completedDays = progressRes.data.filter((p) => p.isCompleted).map((p) => p.dayNumber);
-        const autoCollapsed = {};
-        const weekNums = [...new Set(daysRes.data.map((d) => d.weekNumber))];
-        weekNums.forEach((w) => {
-          const weekDayNums = daysRes.data.filter((d) => d.weekNumber === w).map((d) => d.dayNumber);
-          if (weekDayNums.every((n) => completedDays.includes(n))) autoCollapsed[w] = true;
-        });
-        setCollapsedWeeks(autoCollapsed);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    load();
-    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    return () => { cancelled = true; };
+  const loadDashboardData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [daysRes, progressRes] = await Promise.all([api.get('/days'), api.get('/progress')]);
+      setDays(daysRes.data || []);
+      setAllProgress(progressRes.data || []);
+      const completedDays = (progressRes.data || []).filter((p) => p.isCompleted).map((p) => p.dayNumber);
+      const autoCollapsed = {};
+      const weekNums = [...new Set((daysRes.data || []).map((d) => d.weekNumber))];
+      weekNums.forEach((w) => {
+        const weekDayNums = (daysRes.data || []).filter((d) => d.weekNumber === w).map((d) => d.dayNumber);
+        if (weekDayNums.every((n) => completedDays.includes(n))) autoCollapsed[w] = true;
+      });
+      setCollapsedWeeks(autoCollapsed);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not load your challenge data. Please check your connection and retry.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+  }, [loadDashboardData]);
 
   const getProgress = (dayId) => allProgress.find((p) => p.day === dayId);
   const unlocked = (dayNum) => isUnlocked(dayNum, user);
@@ -69,6 +72,21 @@ export default function Dashboard() {
   const weeks = [...new Set(days.map((d) => d.weekNumber))].sort((a, b) => a - b);
 
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Spinner size={40} /></div>;
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="glass-card p-8 border-red-500/20">
+          <p className="text-4xl mb-3">📡</p>
+          <h2 className="text-xl font-bold text-white mb-2">Unable to Load Dashboard</h2>
+          <p className="text-sm text-gray-400 mb-6">{error}</p>
+          <button onClick={loadDashboardData} className="btn-primary inline-flex items-center gap-2">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
@@ -131,6 +149,7 @@ export default function Dashboard() {
               }}
               className="p-2.5 rounded-xl bg-white/5 text-gray-400 hover:bg-orange-500/20 hover:text-orange-400 transition-all"
               title="Enable daily reminders"
+              aria-label="Enable daily reminders"
             >
               <Bell size={18} />
             </button>

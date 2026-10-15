@@ -1,11 +1,12 @@
 const express = require('express');
 const { protect } = require('../middleware/auth');
+const { aiRateLimit, aiBurstLimit } = require('../middleware/aiRateLimit');
+const { aiChatRules } = require('../middleware/validate');
 
 const router = express.Router();
 
-router.post('/chat', protect, async (req, res) => {
+router.post('/chat', protect, aiRateLimit, aiBurstLimit, aiChatRules, async (req, res) => {
   const { messages, model = 'llama-3.1-8b-instant' } = req.body;
-  if (!messages?.length) return res.status(400).json({ message: 'messages required' });
 
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return res.status(503).json({ message: 'AI service not configured' });

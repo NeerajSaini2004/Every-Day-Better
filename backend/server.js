@@ -100,14 +100,18 @@ app.get('/api', (req, res) => res.json({
 
 app.get('/', (req, res) => res.json({ message: 'Every Day Better API Running ✅', version: '2.0' }));
 
-// One-time seed trigger — protected by SEED_SECRET env var
+// One-time seed trigger — strictly protected by explicit SEED_SECRET env var
 app.post('/api/run-seed', async (req, res) => {
-  if (req.body.secret !== (process.env.SEED_SECRET || 'seed_everydaybetter_2024')) {
-    return res.status(403).json({ message: 'Forbidden' });
+  const configuredSecret = process.env.SEED_SECRET;
+  if (!configuredSecret || req.body.secret !== configuredSecret) {
+    return res.status(403).json({ message: 'Forbidden: SEED_SECRET is not configured or secret is invalid' });
   }
+  const allowed = ['seedData', 'seedGrammar', 'seedVocabulary', 'seedChallenges'];
+  const file = req.body.file || 'seedData';
+  if (!allowed.includes(file)) return res.status(400).json({ message: 'Invalid seed file' });
   try {
     const { execFile } = require('child_process');
-    execFile('node', ['seed/seedData.js'], { cwd: __dirname, env: process.env }, (err, stdout, stderr) => {
+    execFile('node', [`seed/${file}.js`], { cwd: __dirname, env: process.env }, (err, stdout, stderr) => {
       if (err) return res.status(500).json({ message: 'Seed failed', error: err.message, stderr });
       res.json({ message: 'Seed completed', output: stdout });
     });
@@ -126,12 +130,16 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ message: process.env.NODE_ENV === 'production' ? 'Something went wrong.' : err.message });
 });
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log('MongoDB Connected ✅');
-    app.listen(process.env.PORT || 5000, () =>
-      console.log(`Server running on port ${process.env.PORT || 5000} ✅`)
-    );
-  })
-  .catch((err) => { console.error('MongoDB Error:', err); process.exit(1); });
+if (process.env.NODE_ENV !== 'test') {
+  mongoose
+    .connect(process.env.MONGO_URI)
+    .then(() => {
+      console.log('MongoDB Connected ✅');
+      app.listen(process.env.PORT || 5000, () =>
+        console.log(`Server running on port ${process.env.PORT || 5000} ✅`)
+      );
+    })
+    .catch((err) => { console.error('MongoDB Error:', err); process.exit(1); });
+}
+
+module.exports = app;

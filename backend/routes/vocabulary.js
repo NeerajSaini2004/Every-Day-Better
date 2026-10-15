@@ -37,14 +37,30 @@ router.get('/quotes', protect, async (req, res) => {
 
 router.get('/', protect, async (req, res) => {
   try {
-    const { day, difficulty, page = 1, limit = 200 } = req.query;
+    const { day, difficulty, page, limit, paginate } = req.query;
     const filter = {};
     if (day) filter.dayNumber = Number(day);
     if (difficulty) filter.difficulty = difficulty;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(Math.max(1, parseInt(limit, 10) || 50), 200);
+
+    const total = await Vocabulary.countDocuments(filter);
     const words = await Vocabulary.find(filter)
-      .limit(Math.min(Number(limit), 200))
-      .skip((Number(page) - 1) * Math.min(Number(limit), 200))
+      .limit(limitNum)
+      .skip((pageNum - 1) * limitNum)
       .lean();
+
+    if (paginate === 'true') {
+      return res.json({
+        words,
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+        limit: limitNum,
+      });
+    }
+
     res.json(words);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch vocabulary' });

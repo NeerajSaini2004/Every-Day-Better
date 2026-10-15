@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Flame, Zap, Star, ChevronDown, ChevronUp, BookOpen, Mic, PenTool, Headphones, MessageSquare, Brain, Award, Quote } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
 
 const features = [
   { icon: '📚', title: 'Daily Vocabulary', desc: 'Learn 10 new words every day with Hindi meanings and example sentences.' },
@@ -45,26 +44,30 @@ const TASK_ICONS = [
   { icon: <Brain size={14} />, label: 'Quiz' },
 ];
 
+const DEFAULT_QUOTE = {
+  text: 'The limits of my language mean the limits of my world.',
+  author: 'Ludwig Wittgenstein',
+};
+
+const DEFAULT_LEADERBOARD = [
+  { _id: '1', name: 'Aarav Sharma', level: 12, streak: 28, xp: 5840 },
+  { _id: '2', name: 'Priya Patel', level: 11, streak: 24, xp: 5210 },
+  { _id: '3', name: 'Rohan Verma', level: 9, streak: 19, xp: 4490 },
+];
+
 export default function Home() {
   const { user: storedUser } = useAuth();
   const navigate = useNavigate();
   const [openFaq, setOpenFaq] = useState(null);
   const [count, setCount] = useState(0);
   const [activeWeek, setActiveWeek] = useState(0);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [dailyQuote, setDailyQuote] = useState(null);
+  const leaderboard = DEFAULT_LEADERBOARD;
+  const dailyQuote = DEFAULT_QUOTE;
 
   useEffect(() => {
     const interval = setInterval(() => setCount((c) => (c < 60 ? c + 1 : c)), 30);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (storedUser) {
-      api.get('/users/leaderboard').then(r => setLeaderboard(r.data.slice(0, 3))).catch(() => {});
-      api.get('/vocabulary/daily-quote').then(r => setDailyQuote(r.data)).catch(() => {});
-    }
-  }, [storedUser]);
 
   return (
     <div className="min-h-screen">

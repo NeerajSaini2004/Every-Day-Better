@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/ui/Spinner';
@@ -70,16 +70,41 @@ export default function Progress() {
   const { user } = useAuth();
   const [allProgress, setAllProgress] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    api.get('/progress').then((r) => {
-      if (!cancelled) { setAllProgress(r.data); setLoading(false); }
-    });
-    return () => { cancelled = true; };
+  const loadProgress = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get('/progress');
+      setAllProgress(res.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not load your progress history. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
+
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Spinner size={40} /></div>;
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="glass-card p-8 border-red-500/20">
+          <p className="text-4xl mb-3">📈</p>
+          <h2 className="text-xl font-bold text-white mb-2">Unable to Load Progress</h2>
+          <p className="text-sm text-gray-400 mb-6">{error}</p>
+          <button onClick={loadProgress} className="btn-primary inline-flex items-center gap-2">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const completedDays = allProgress.filter((p) => p.isCompleted);
   const totalXP = allProgress.reduce((sum, p) => sum + p.totalXPEarned, 0);

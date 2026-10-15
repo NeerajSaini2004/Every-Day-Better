@@ -3,6 +3,7 @@ const Progress = require('../models/Progress');
 const User = require('../models/User');
 const Day = require('../models/Day');
 const { protect } = require('../middleware/auth');
+const { taskUpdateRules } = require('../middleware/validate');
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ router.get('/:dayNumber', protect, async (req, res) => {
 });
 
 // Update task completion
-router.put('/:dayNumber/task/:taskId', protect, async (req, res) => {
+router.put('/:dayNumber/task/:taskId', protect, taskUpdateRules, async (req, res) => {
   try {
     const { completed } = req.body;
     const day = await Day.findOne({ dayNumber: req.params.dayNumber });

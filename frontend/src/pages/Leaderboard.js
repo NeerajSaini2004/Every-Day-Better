@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/ui/Spinner';
@@ -69,13 +69,42 @@ export default function Leaderboard() {
   const { user } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [tab, setTab] = useState('xp');
 
-  useEffect(() => {
-    api.get('/users/leaderboard').then((r) => { setUsers(r.data); setLoading(false); });
+  const loadLeaderboard = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get('/users/leaderboard');
+      setUsers(res.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Could not load leaderboard rankings. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    loadLeaderboard();
+  }, [loadLeaderboard]);
+
   if (loading) return <div className="flex items-center justify-center min-h-[60vh]"><Spinner size={40} /></div>;
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+        <div className="glass-card p-8 border-red-500/20">
+          <p className="text-4xl mb-3">🏆</p>
+          <h2 className="text-xl font-bold text-white mb-2">Unable to Load Leaderboard</h2>
+          <p className="text-sm text-gray-400 mb-6">{error}</p>
+          <button onClick={loadLeaderboard} className="btn-primary inline-flex items-center gap-2">
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const sortedByXP = [...users].sort((a, b) => b.xp - a.xp);
   const sortedByStreak = [...users].sort((a, b) => b.streak - a.streak);
