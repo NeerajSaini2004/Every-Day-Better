@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Eye, EyeOff, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
+import GoogleLoginButton from '../components/ui/GoogleLoginButton';
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
-  const { register, loading } = useAuth();
+  const { register, googleLogin, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,6 +19,14 @@ export default function Register() {
     const ok = await register(form.name, form.email, form.password);
     if (ok) navigate('/onboarding');
     else setError('Registration failed. Email may already be in use.');
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    const result = await googleLogin(credentialResponse.credential);
+    if (result.ok) {
+      navigate(result.isNew ? '/onboarding' : '/dashboard');
+    }
   };
 
   return (
@@ -118,7 +127,10 @@ export default function Register() {
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          <p className="text-center text-sm text-gray-500">
+          {/* Google Sign-In */}
+          <GoogleLoginButton onSuccess={handleGoogleSuccess} />
+
+          <p className="text-center text-sm text-gray-500 mt-6">
             Already have an account?{' '}
             <Link to="/login" className="text-blue-400 hover:text-blue-300 font-semibold transition">
               Login

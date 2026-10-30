@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import PremiumShell from './components/layout/PremiumShell';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -79,20 +80,22 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <AuthProvider>
-        <ErrorBoundary>
-          <AppRoutes />
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: { background: '#1F2937', color: '#fff', border: '1px solid #374151', borderRadius: '12px' },
-              success: { iconTheme: { primary: '#10B981', secondary: '#fff' } },
-              error: { iconTheme: { primary: '#EF4444', secondary: '#fff' } },
-            }}
-          />
-        </ErrorBoundary>
-      </AuthProvider>
-    </BrowserRouter>
+    <GoogleOAuthProvider clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID || ''}>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <AuthProvider>
+          <ErrorBoundary>
+            <AppRoutes />
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                style: { background: '#1F2937', color: '#fff', border: '1px solid #374151', borderRadius: '12px' },
+                success: { iconTheme: { primary: '#10B981', secondary: '#fff' } },
+                error: { iconTheme: { primary: '#EF4444', secondary: '#fff' } },
+              }}
+            />
+          </ErrorBoundary>
+        </AuthProvider>
+      </BrowserRouter>
+    </GoogleOAuthProvider>
   );
 }

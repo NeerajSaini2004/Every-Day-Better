@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Flame, Zap, Star, BookOpen, Mic, Trophy } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import GoogleLoginButton from '../components/ui/GoogleLoginButton';
 
 const perks = [
   { icon: <BookOpen size={18} />, text: '600+ vocabulary words with Hindi meanings' },
@@ -18,7 +19,7 @@ const stats = [
 ];
 
 export default function Login() {
-  const { login, loading } = useAuth();
+  const { login, googleLogin, loading } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [show, setShow] = useState(false);
@@ -30,6 +31,14 @@ export default function Login() {
     const ok = await login(form.email, form.password);
     if (ok) navigate('/dashboard');
     else setError('Invalid email or password.');
+  };
+
+  const handleGoogleSuccess = async (tokenResponse) => {
+    setError('');
+    const result = await googleLogin(tokenResponse.credential);
+    if (result.ok) {
+      navigate(result.isNew ? '/onboarding' : '/dashboard');
+    }
   };
 
   return (
@@ -202,7 +211,10 @@ export default function Login() {
             <div className="flex-1 h-px bg-white/10" />
           </div>
 
-          <p className="text-center text-sm text-gray-500">
+          {/* Google Sign-In */}
+          <GoogleLoginButton onSuccess={handleGoogleSuccess} label="Continue with Google" />
+
+          <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{' '}
             <Link to="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition">
               Sign up free
