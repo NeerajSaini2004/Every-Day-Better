@@ -143,10 +143,13 @@ export default function Profile() {
   const levelStartXP = (level - 1) * 500;
   const xpInLevel = xp - levelStartXP;
   const completedCount = (user?.completedDays || []).length;
-  const weeksCompleted = Math.floor(completedCount / 7);
+  // App uses 10 days per week × 6 weeks = 60 days
+  const weeksCompleted = Math.floor(completedCount / 10);
   const earnedBadges = user?.badges || [];
   const lockedBadges = Object.keys(BADGES).filter((k) => !earnedBadges.includes(k));
   const gradient = getGradient(user?.name);
+  // Google-only accounts have no password
+  const hasPassword = !user?.googleId || !!user?.password;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-5">
@@ -204,7 +207,7 @@ export default function Profile() {
           { label: 'Streak', value: `${user?.streak || 0}🔥`, sub: 'current', color: 'text-orange-400', bg: 'from-orange-900/30 to-orange-900/10', border: 'border-orange-500/20' },
           { label: 'Best Streak', value: user?.longestStreak || 0, sub: 'all time', color: 'text-yellow-400', bg: 'from-yellow-900/30 to-yellow-900/10', border: 'border-yellow-500/20' },
           { label: 'Total XP', value: xp.toLocaleString(), sub: `Lv.${level}`, color: 'text-purple-400', bg: 'from-purple-900/30 to-purple-900/10', border: 'border-purple-500/20' },
-          { label: 'Weeks Done', value: weeksCompleted, sub: 'of 9', color: 'text-green-400', bg: 'from-green-900/30 to-green-900/10', border: 'border-green-500/20' },
+          { label: 'Weeks Done', value: weeksCompleted, sub: 'of 6', color: 'text-green-400', bg: 'from-green-900/30 to-green-900/10', border: 'border-green-500/20' },
         ].map(({ label, value, sub, color, bg, border }) => (
           <div key={label} className={`glass-card bg-gradient-to-br ${bg} ${border} text-center p-3`}>
             <p className={`text-xl font-black ${color}`}>{value}</p>
@@ -268,7 +271,14 @@ export default function Profile() {
       {/* Account Settings */}
       <div className="glass-card space-y-4">
         <h2 className="font-bold text-white text-sm">⚙️ Account</h2>
-        <ChangePassword />
+        {hasPassword ? (
+          <ChangePassword />
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-gray-500">
+            <span>🔗</span>
+            <span>Signed in with Google — no password needed</span>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

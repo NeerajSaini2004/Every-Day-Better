@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Flame, Zap, Star, ChevronDown, ChevronUp, BookOpen, Mic, PenTool, Headphones, MessageSquare, Brain, Award, Quote } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const features = [
   { icon: '📚', title: 'Daily Vocabulary', desc: 'Learn 10 new words every day with Hindi meanings and example sentences.' },
