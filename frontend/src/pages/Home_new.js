@@ -50,11 +50,7 @@ const DEFAULT_QUOTE = {
   author: 'Ludwig Wittgenstein',
 };
 
-const DEFAULT_LEADERBOARD = [
-  { _id: '1', name: 'Aarav Sharma', level: 12, streak: 28, xp: 5840 },
-  { _id: '2', name: 'Priya Patel', level: 11, streak: 24, xp: 5210 },
-  { _id: '3', name: 'Rohan Verma', level: 9, streak: 19, xp: 4490 },
-];
+const DEFAULT_LEADERBOARD = [];
 
 export default function Home() {
   const { user: storedUser } = useAuth();
@@ -62,12 +58,19 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState(null);
   const [count, setCount] = useState(0);
   const [activeWeek, setActiveWeek] = useState(0);
-  const leaderboard = DEFAULT_LEADERBOARD;
+  const [leaderboard, setLeaderboard] = useState(DEFAULT_LEADERBOARD);
   const dailyQuote = DEFAULT_QUOTE;
 
   useEffect(() => {
     const interval = setInterval(() => setCount((c) => (c < 60 ? c + 1 : c)), 30);
     return () => clearInterval(interval);
+  }, []);
+
+  // Fetch real top 3 leaderboard
+  useEffect(() => {
+    api.get('/users/leaderboard/top')
+      .then((res) => { if (res.data?.length) setLeaderboard(res.data); })
+      .catch(() => {});  // silently fall back to empty
   }, []);
 
   return (

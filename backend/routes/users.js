@@ -37,7 +37,21 @@ router.put('/change-password', protect, changePasswordRules, async (req, res) =>
   }
 });
 
-// Leaderboard
+// Public leaderboard preview (top 3, no auth required) — used on Home page
+router.get('/leaderboard/top', async (req, res) => {
+  try {
+    const users = await User.find({ role: 'user' })
+      .select('name xp level streak completedDays')
+      .sort({ xp: -1 })
+      .limit(3)
+      .lean();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Leaderboard (full, auth required)
 router.get('/leaderboard', protect, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);

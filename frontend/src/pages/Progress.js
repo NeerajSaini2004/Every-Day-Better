@@ -5,7 +5,7 @@ import Spinner from '../components/ui/Spinner';
 import ProgressBar from '../components/ui/ProgressBar';
 import BadgeCard from '../components/ui/BadgeCard';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { Flame, Zap, Target, Trophy, Calendar } from 'lucide-react';
+import { Flame, Zap, Target, Trophy, Calendar, TrendingUp, Star } from 'lucide-react';
 import { getLevelName, getXPProgress } from '../utils/constants';
 
 // Last 30 days streak calendar
@@ -118,9 +118,17 @@ export default function Progress() {
   const levelStartXP = (level - 1) * 500;
   const xpInLevel = xp - levelStartXP;
 
-  // Weekly chart data
-  const weeklyData = Array.from({ length: 9 }, (_, i) => {
-    const weekDays = allProgress.filter((p) => Math.ceil(p.dayNumber / 7) === i + 1);
+  // Next milestone calculation
+  const milestones = [7, 14, 21, 30, 45, 60];
+  const nextMilestone = milestones.find((m) => m > completedDays.length) || 60;
+  const daysToMilestone = nextMilestone - completedDays.length;
+
+  // Average XP per completed day
+  const avgXPPerDay = completedDays.length > 0 ? Math.round(totalXP / completedDays.length) : 0;
+
+  // Weekly chart data (6 weeks × 10 days = 60 days)
+  const weeklyData = Array.from({ length: 6 }, (_, i) => {
+    const weekDays = allProgress.filter((p) => Math.ceil(p.dayNumber / 10) === i + 1);
     return {
       week: `W${i + 1}`,
       xp: weekDays.reduce((sum, p) => sum + p.totalXPEarned, 0),
@@ -133,6 +141,45 @@ export default function Progress() {
       <div>
         <h1 className="text-xl sm:text-2xl font-black text-white">Your Progress 📊</h1>
         <p className="text-gray-400 text-xs sm:text-sm mt-1">Track your 60-day journey</p>
+      </div>
+
+      {/* Insight Tiles */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <div className="glass-card bg-gradient-to-br from-orange-900/30 to-red-900/10 border-orange-500/20 p-3 sm:p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Flame size={16} className="text-orange-400" />
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Streak</span>
+          </div>
+          <p className="text-2xl font-black text-white">{user?.streak || 0}<span className="text-sm ml-1">🔥</span></p>
+          <p className="text-[10px] text-gray-500 mt-1">Best: {user?.longestStreak || 0} days</p>
+        </div>
+
+        <div className="glass-card bg-gradient-to-br from-purple-900/30 to-blue-900/10 border-purple-500/20 p-3 sm:p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap size={16} className="text-purple-400" />
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Total XP</span>
+          </div>
+          <p className="text-2xl font-black text-white">{totalXP.toLocaleString()}</p>
+          <p className="text-[10px] text-gray-500 mt-1">~{avgXPPerDay} XP/day avg</p>
+        </div>
+
+        <div className="glass-card bg-gradient-to-br from-green-900/30 to-teal-900/10 border-green-500/20 p-3 sm:p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Target size={16} className="text-green-400" />
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Tasks Done</span>
+          </div>
+          <p className="text-2xl font-black text-white">{totalTasks}</p>
+          <p className="text-[10px] text-gray-500 mt-1">across {completedDays.length} days</p>
+        </div>
+
+        <div className="glass-card bg-gradient-to-br from-yellow-900/30 to-orange-900/10 border-yellow-500/20 p-3 sm:p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Star size={16} className="text-yellow-400" />
+            <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Next Milestone</span>
+          </div>
+          <p className="text-2xl font-black text-white">Day {nextMilestone}</p>
+          <p className="text-[10px] text-gray-500 mt-1">{daysToMilestone > 0 ? `${daysToMilestone} days away` : '🎉 Reached!'}</p>
+        </div>
       </div>
 
       {/* Overall Progress */}
@@ -168,22 +215,6 @@ export default function Progress() {
           </div>
         </div>
         <ProgressBar value={xpPct} color="purple" size="md" />
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        {[
-          { icon: Flame, label: 'Current Streak', value: `${user?.streak || 0} 🔥`, sub: `Best: ${user?.longestStreak || 0}`, gradient: 'from-orange-900/30 to-red-900/30', border: 'border-orange-500/20' },
-          { icon: Zap, label: 'Total XP', value: totalXP.toLocaleString(), sub: `Level ${level}`, gradient: 'from-purple-900/30 to-blue-900/30', border: 'border-purple-500/20' },
-          { icon: Target, label: 'Tasks Done', value: totalTasks, sub: `${completedDays.length} days`, gradient: 'from-green-900/30 to-teal-900/30', border: 'border-green-500/20' },
-          { icon: Trophy, label: 'Best Streak', value: `${user?.longestStreak || 0} 🏆`, sub: 'All time', gradient: 'from-yellow-900/30 to-orange-900/30', border: 'border-yellow-500/20' },
-        ].map(({ icon: Icon, label, value, sub, gradient, border }) => (
-          <div key={label} className={`glass-card bg-gradient-to-br ${gradient} ${border} text-center p-3 sm:p-4`}>
-            <p className="text-xl sm:text-2xl font-black text-white">{value}</p>
-            <p className="text-xs text-gray-400 mt-0.5">{label}</p>
-            <p className="text-[10px] text-gray-600 mt-0.5">{sub}</p>
-          </div>
-        ))}
       </div>
 
       {/* Streak Calendar */}
